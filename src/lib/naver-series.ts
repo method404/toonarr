@@ -207,8 +207,42 @@ function pad2(value: number) {
   return String(value).padStart(2, "0");
 }
 
-function toIsoDate(value: Date) {
-  return `${value.getFullYear()}-${pad2(value.getMonth() + 1)}-${pad2(value.getDate())}`;
+const SEOUL_TIME_ZONE = "Asia/Seoul";
+
+type CalendarDate = {
+  year: number;
+  month: number;
+  day: number;
+};
+
+const seoulDateFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: SEOUL_TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+function formatCalendarDate(value: CalendarDate) {
+  return `${value.year}-${pad2(value.month)}-${pad2(value.day)}`;
+}
+
+function getSeoulCalendarDate(value: Date): CalendarDate {
+  const parts = seoulDateFormatter.formatToParts(value);
+  const year = Number(parts.find((part) => part.type === "year")?.value);
+  const month = Number(parts.find((part) => part.type === "month")?.value);
+  const day = Number(parts.find((part) => part.type === "day")?.value);
+
+  return { year, month, day };
+}
+
+function addDays(value: CalendarDate, days: number): CalendarDate {
+  const parsed = new Date(Date.UTC(value.year, value.month - 1, value.day + days, 12, 0, 0));
+
+  return {
+    year: parsed.getUTCFullYear(),
+    month: parsed.getUTCMonth() + 1,
+    day: parsed.getUTCDate(),
+  };
 }
 
 export function resolveNaverEpisodeAirDate(
@@ -220,40 +254,32 @@ export function resolveNaverEpisodeAirDate(
 
   if (absoluteMatch) {
     const year = Number(`20${absoluteMatch[1]}`);
-    const month = Number(absoluteMatch[2]) - 1;
+    const month = Number(absoluteMatch[2]);
     const day = Number(absoluteMatch[3]);
-    const parsed = new Date(year, month, day, 12, 0, 0);
 
-    return Number.isNaN(parsed.getTime()) ? null : toIsoDate(parsed);
+    return Number.isNaN(Date.UTC(year, month - 1, day, 12, 0, 0))
+      ? null
+      : formatCalendarDate({ year, month, day });
   }
 
+  const seoulToday = getSeoulCalendarDate(now);
+
   if (normalizedValue === "오늘밤무료" || normalizedValue === "오늘무료") {
-    const parsed = new Date(now);
-    parsed.setHours(12, 0, 0, 0);
-    return toIsoDate(parsed);
+    return formatCalendarDate(seoulToday);
   }
 
   if (normalizedValue === "내일무료") {
-    const parsed = new Date(now);
-    parsed.setHours(12, 0, 0, 0);
-    parsed.setDate(parsed.getDate() + 1);
-    return toIsoDate(parsed);
+    return formatCalendarDate(addDays(seoulToday, 1));
   }
 
   if (normalizedValue === "모레무료") {
-    const parsed = new Date(now);
-    parsed.setHours(12, 0, 0, 0);
-    parsed.setDate(parsed.getDate() + 2);
-    return toIsoDate(parsed);
+    return formatCalendarDate(addDays(seoulToday, 2));
   }
 
   const relativeMatch = value.match(/(\d+)\s*일\s*후\s*무료/);
 
   if (relativeMatch) {
-    const parsed = new Date(now);
-    parsed.setHours(12, 0, 0, 0);
-    parsed.setDate(parsed.getDate() + Number(relativeMatch[1]));
-    return toIsoDate(parsed);
+    return formatCalendarDate(addDays(seoulToday, Number(relativeMatch[1])));
   }
 
   return null;
