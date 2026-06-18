@@ -1,0 +1,10 @@
+.git
+.next
+node_modules
+npm-debug.log*
+data
+storage
+tmp-*.png
+AGENTS.md
+CLAUDE.md
+tsconfig.tsbuildinfo
