@@ -14,8 +14,8 @@ if [ -n "$PUID" ] && [ "$(id -u "$APP_USER")" != "$PUID" ]; then
   usermod -o -u "$PUID" -g "${PGID:-$(id -g "$APP_USER")}" "$APP_USER"
 fi
 
-mkdir -p /app/data /app/data/settings /app/storage
-chown -R "$APP_USER:$APP_GROUP" /app/data /app/storage
-chmod -R u+rwX /app/data /app/storage
+mkdir -p /app/data /app/data/settings /app/storage /app/.next/cache
+chown -R "$APP_USER:$APP_GROUP" /app/data /app/storage /app/.next/cache
+chmod -R u+rwX /app/data /app/storage /app/.next/cache
 
 exec gosu "$APP_USER:$APP_GROUP" node server.js

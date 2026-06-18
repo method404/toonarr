@@ -52,7 +52,7 @@ const DEFAULT_APP_SETTINGS: AppSettings = {
   },
   updates: {
     provider: "github",
-    githubRepo: "method404/toonarr-releases",
+    githubRepo: "method404/toonarr",
     dockerImage: "",
   },
   security: {

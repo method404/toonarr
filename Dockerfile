@@ -17,7 +17,8 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends chromium ca-certificates fonts-noto-color-emoji gosu \
   && rm -rf /var/lib/apt/lists/*
 RUN groupadd --system appgroup && useradd --system --gid appgroup --create-home appuser
-RUN mkdir -p /app/data /app/storage && chown -R appuser:appgroup /app/data /app/storage
+RUN mkdir -p /app/data /app/storage /app/.next/cache \
+  && chown -R appuser:appgroup /app/data /app/storage /app/.next/cache
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
