@@ -1,13 +1,8 @@
 "use client";
 
-import Image from "next/image";
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import type { NaverCredentialSummary } from "@/lib/naver-credentials";
 import type { Locale } from "@/lib/locale";
-import type {
-  NaverRemoteAuthAttemptSummary,
-  NaverRemoteAuthState,
-} from "@/lib/naver-remote-auth";
 import type { NaverSessionSummary } from "@/lib/naver-session";
 
 type NaverSessionSettingsProps = {
@@ -45,55 +40,6 @@ function getAdultAccessLabel(value: boolean | null, locale: Locale) {
       : "Unavailable";
 }
 
-function getRemoteAuthStateLabel(state: NaverRemoteAuthState, locale: Locale) {
-  if (locale !== "ko") {
-    switch (state) {
-      case "pending":
-        return "Waiting for login";
-      case "verified":
-        return "Login confirmed";
-      case "capturing":
-        return "Saving session";
-      case "completed":
-        return "Completed";
-      case "failed":
-        return "Failed";
-      case "expired":
-        return "Expired";
-      default:
-        return "Idle";
-    }
-  }
-
-  switch (state) {
-    case "pending":
-      return "로그인 대기";
-    case "verified":
-      return "로그인 확인됨";
-    case "capturing":
-      return "세션 저장 중";
-    case "completed":
-      return "완료";
-    case "failed":
-      return "실패";
-    case "expired":
-      return "만료됨";
-    default:
-      return "대기 없음";
-  }
-}
-
-async function fetchSessionSummary() {
-  const response = await fetch("/api/settings/naver-session", {
-    cache: "no-store",
-  });
-  const payload = (await response.json()) as {
-    session?: NaverSessionSummary;
-  };
-
-  return response.ok ? payload.session ?? null : null;
-}
-
 export function NaverSessionSettings({
   locale,
   initialSession,
@@ -103,16 +49,18 @@ export function NaverSessionSettings({
   const [credentials, setCredentials] = useState(initialCredentials);
   const [username, setUsername] = useState(initialCredentials.username ?? "");
   const [password, setPassword] = useState("");
-  const [remoteAttempt, setRemoteAttempt] = useState<NaverRemoteAuthAttemptSummary | null>(
-    null,
+  const [toonarrUrl] = useState(() =>
+    typeof window === "undefined" ? "" : window.location.origin,
   );
-  const [remoteQrDataUrl, setRemoteQrDataUrl] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [pendingAction, setPendingAction] = useState<
-    "credentialSave" | "credentialClear" | "remoteStart" | null
+    "credentialSave" | "credentialClear" | "bridgeCopy" | null
   >(null);
   const [isPending, startTransition] = useTransition();
+  const bridgeCommand = toonarrUrl
+    ? `npm run naver:bridge -- --toonarr-url ${toonarrUrl} --username "${username || "NAVER_ID"}" --password "NAVER_PW"`
+    : `npm run naver:bridge -- --toonarr-url http://NAS_IP:3000 --username "NAVER_ID" --password "NAVER_PW"`;
 
   const labels = {
     credentials: locale === "ko" ? "네이버 계정" : "Naver account",
@@ -122,14 +70,14 @@ export function NaverSessionSettings({
     lastUsedAt: locale === "ko" ? "마지막 자동 로그인" : "Last auto login",
     adultAccess:
       locale === "ko" ? "성인컨텐츠 접근" : "Adult content access",
-    remoteLogin:
-      locale === "ko" ? "원격 로그인" : "Remote sign-in",
+    bridgeLogin:
+      locale === "ko" ? "외부 PC 로그인" : "External PC sign-in",
     saveAccount: locale === "ko" ? "계정 저장" : "Save account",
     savingAccount: locale === "ko" ? "저장 중..." : "Saving...",
-    startRemoteLogin:
-      locale === "ko" ? "원격 로그인 시작" : "Start remote sign-in",
-    startingRemoteLogin:
-      locale === "ko" ? "링크 생성 중..." : "Creating link...",
+    copyBridgeCommand:
+      locale === "ko" ? "명령 복사" : "Copy command",
+    copyingBridgeCommand:
+      locale === "ko" ? "복사 중..." : "Copying...",
     clearAccount: locale === "ko" ? "계정 삭제" : "Delete account",
     clearingAccount: locale === "ko" ? "삭제 중..." : "Deleting...",
     configuredSummary:
@@ -142,96 +90,18 @@ export function NaverSessionSettings({
         : "Saved account for automatic sign-in.",
     credentialCleared:
       locale === "ko" ? "저장된 계정을 삭제했습니다." : "Stored account deleted.",
-    remoteStarted:
-      locale === "ko"
-        ? "원격 로그인 링크를 만들었습니다. 외부 브라우저에서 로그인하고 '이 기기에서 2단계 인증 요청 안함'을 체크하세요."
-        : "Created a remote sign-in link. Complete login in an external browser and enable trusted device.",
     credentialError:
       locale === "ko" ? "계정 저장에 실패했습니다." : "Failed to save account.",
-    remoteError:
+    bridgeGuide:
       locale === "ko"
-        ? "원격 로그인 링크를 만들지 못했습니다."
-        : "Failed to create remote sign-in link.",
-    remoteGuide:
-      locale === "ko"
-        ? "PC나 휴대폰에서 아래 링크 또는 QR을 열고 네이버 로그인과 브라우저 신뢰 설정을 완료하세요."
-        : "Open the link or QR below on another device and finish Naver login with trusted-device enabled.",
-    remoteLink: locale === "ko" ? "원격 로그인 링크" : "Remote sign-in link",
-    expiresAt: locale === "ko" ? "만료 시각" : "Expires at",
-    openLink: locale === "ko" ? "링크 열기" : "Open link",
+        ? "NAS가 아니라 외부 PC에서 아래 명령을 실행하면 브라우저가 열립니다. 그 브라우저에서 네이버 로그인, 2단계 인증, '이 기기에서 2단계 인증 요청 안함'까지 끝내면 세션이 NAS Toonarr로 업로드됩니다."
+        : "Run the command below on an external PC. It opens a browser, completes Naver login and device trust, then uploads the session to Toonarr.",
+    bridgeCommand: locale === "ko" ? "실행 명령" : "Command",
+    bridgeCopied:
+      locale === "ko" ? "브릿지 명령을 복사했습니다." : "Copied the bridge command.",
+    bridgeCopyError:
+      locale === "ko" ? "명령 복사에 실패했습니다." : "Failed to copy the command.",
   };
-
-  useEffect(() => {
-    void (async () => {
-      try {
-        const response = await fetch("/api/settings/naver-session/remote", {
-          cache: "no-store",
-        });
-        const payload = (await response.json()) as {
-          attempt?: NaverRemoteAuthAttemptSummary;
-          qrDataUrl?: string | null;
-        };
-
-        if (!response.ok || !payload.attempt) {
-          return;
-        }
-
-        setRemoteAttempt(payload.attempt.configured ? payload.attempt : null);
-        setRemoteQrDataUrl(payload.qrDataUrl ?? null);
-      } catch {
-        return;
-      }
-    })();
-  }, []);
-
-  useEffect(() => {
-    if (
-      !remoteAttempt ||
-      !["pending", "verified", "capturing"].includes(remoteAttempt.state)
-    ) {
-      return;
-    }
-
-    const timer = window.setInterval(async () => {
-      try {
-        const response = await fetch("/api/settings/naver-session/remote", {
-          cache: "no-store",
-        });
-        const payload = (await response.json()) as {
-          attempt?: NaverRemoteAuthAttemptSummary;
-          qrDataUrl?: string | null;
-        };
-
-        if (!response.ok || !payload.attempt) {
-          return;
-        }
-
-        setRemoteAttempt(payload.attempt.configured ? payload.attempt : null);
-        setRemoteQrDataUrl(payload.qrDataUrl ?? null);
-
-        if (payload.attempt.state === "completed") {
-          const nextSession = await fetchSessionSummary();
-
-          if (nextSession) {
-            setSession(nextSession);
-          }
-
-          setMessage(
-            locale === "ko"
-              ? "원격 로그인이 끝났고 네이버 세션을 저장했습니다."
-              : "Remote sign-in finished and the Naver session was saved.",
-          );
-          setError("");
-        }
-      } catch {
-        return;
-      }
-    }, 2000);
-
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [locale, remoteAttempt]);
 
   return (
     <div className="settings-page">
@@ -310,61 +180,21 @@ export function NaverSessionSettings({
 
           <div className="settings-form-row">
             <div className="settings-form-label">
-              <h3>{labels.remoteLogin}</h3>
+              <h3>{labels.bridgeLogin}</h3>
             </div>
             <div className="settings-form-control">
-              <strong className="settings-inline-value">
-                {getRemoteAuthStateLabel(remoteAttempt?.state ?? "idle", locale)}
-              </strong>
+              <div className="settings-remote-auth-box">
+                <p className="settings-meta-note">{labels.bridgeGuide}</p>
 
-              {remoteAttempt?.configured && remoteAttempt.startUrl ? (
-                <div className="settings-remote-auth-box">
-                  <p className="settings-meta-note">{labels.remoteGuide}</p>
-
-                  {remoteQrDataUrl ? (
-                    <div className="settings-remote-auth-qr">
-                      <Image
-                        src={remoteQrDataUrl}
-                        alt="Remote login QR"
-                        width={220}
-                        height={220}
-                        unoptimized
-                      />
-                    </div>
-                  ) : null}
-
-                  <div className="settings-remote-auth-link-row">
-                    <span className="settings-remote-auth-label">{labels.remoteLink}</span>
-                    <input
-                      className="settings-input"
-                      type="text"
-                      readOnly
-                      value={remoteAttempt.startUrl}
-                    />
-                  </div>
-
-                  <div className="settings-inline-actions">
-                    <a
-                      className="button"
-                      href={remoteAttempt.startUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {labels.openLink}
-                    </a>
-                  </div>
-
-                  <p className="settings-meta-note">
-                    {labels.expiresAt}: {formatDateTime(remoteAttempt.expiresAt, locale)}
-                  </p>
-
-                  {remoteAttempt.error ? (
-                    <p className="settings-error-inline">{remoteAttempt.error}</p>
-                  ) : null}
+                <div className="settings-remote-auth-link-row">
+                  <span className="settings-remote-auth-label">{labels.bridgeCommand}</span>
+                  <textarea
+                    className="settings-input settings-command-input"
+                    readOnly
+                    value={bridgeCommand}
+                  />
                 </div>
-              ) : (
-                <p className="settings-meta-note">{labels.remoteGuide}</p>
-              )}
+              </div>
             </div>
           </div>
         </div>
@@ -423,72 +253,25 @@ export function NaverSessionSettings({
             <button
               type="button"
               className="button"
-              disabled={
-                isPending ||
-                (!credentials.configured &&
-                  (username.trim().length === 0 || password.length === 0))
-              }
+              disabled={toonarrUrl.length === 0}
               onClick={() => {
                 setMessage("");
                 setError("");
-                setPendingAction("remoteStart");
+                setPendingAction("bridgeCopy");
 
                 startTransition(async () => {
                   try {
-                    let nextCredentials = credentials;
-
-                    if (!credentials.configured && username.trim() && password.length > 0) {
-                      const credentialResponse = await fetch(
-                        "/api/settings/naver-credentials",
-                        {
-                          method: "PUT",
-                          headers: {
-                            "content-type": "application/json",
-                          },
-                          body: JSON.stringify({ username, password }),
-                        },
-                      );
-                      const credentialPayload = (await credentialResponse.json()) as {
-                        error?: string;
-                        credentials?: NaverCredentialSummary;
-                      };
-
-                      if (!credentialResponse.ok || !credentialPayload.credentials) {
-                        throw new Error(credentialPayload.error ?? labels.credentialError);
-                      }
-
-                      nextCredentials = credentialPayload.credentials;
-                      setCredentials(credentialPayload.credentials);
-                      setUsername(credentialPayload.credentials.username ?? "");
-                      setPassword("");
+                    if (!navigator.clipboard) {
+                      throw new Error(labels.bridgeCopyError);
                     }
-
-                    if (!nextCredentials.configured) {
-                      throw new Error(labels.credentialError);
-                    }
-
-                    const response = await fetch("/api/settings/naver-session/remote", {
-                      method: "POST",
-                    });
-                    const payload = (await response.json()) as {
-                      error?: string;
-                      attempt?: NaverRemoteAuthAttemptSummary;
-                      qrDataUrl?: string | null;
-                    };
-
-                    if (!response.ok || !payload.attempt) {
-                      throw new Error(payload.error ?? labels.remoteError);
-                    }
-
-                    setRemoteAttempt(payload.attempt);
-                    setRemoteQrDataUrl(payload.qrDataUrl ?? null);
-                    setMessage(labels.remoteStarted);
+                    await navigator.clipboard.writeText(bridgeCommand);
+                    setMessage(labels.bridgeCopied);
                     setError("");
                   } catch (requestError) {
                     setError(
                       requestError instanceof Error
                         ? requestError.message
-                        : labels.remoteError,
+                        : labels.bridgeCopyError,
                     );
                   } finally {
                     setPendingAction(null);
@@ -496,9 +279,9 @@ export function NaverSessionSettings({
                 });
               }}
             >
-              {pendingAction === "remoteStart" && isPending
-                ? labels.startingRemoteLogin
-                : labels.startRemoteLogin}
+              {pendingAction === "bridgeCopy" && isPending
+                ? labels.copyingBridgeCommand
+                : labels.copyBridgeCommand}
             </button>
           </div>
 
@@ -545,8 +328,6 @@ export function NaverSessionSettings({
                       },
                       maskedCookieHeader: "",
                     });
-                    setRemoteAttempt(null);
-                    setRemoteQrDataUrl(null);
                     setUsername("");
                     setPassword("");
                     setMessage(labels.credentialCleared);

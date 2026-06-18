@@ -1262,6 +1262,14 @@ textarea {
   font-weight: 600;
 }
 
+.settings-command-input {
+  min-height: 92px;
+  padding: 10px 12px;
+  resize: vertical;
+  line-height: 1.5;
+  font-family: var(--font-mono), monospace;
+}
+
 .settings-inline-note {
   grid-column: 2;
   margin: 0;
