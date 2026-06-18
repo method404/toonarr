@@ -215,6 +215,7 @@ export function resolveNaverEpisodeAirDate(
   value: string,
   now: Date = new Date(),
 ): string | null {
+  const normalizedValue = value.replace(/\s+/g, "");
   const absoluteMatch = value.match(/^(\d{2})\.(\d{2})\.(\d{2})$/);
 
   if (absoluteMatch) {
@@ -224,6 +225,26 @@ export function resolveNaverEpisodeAirDate(
     const parsed = new Date(year, month, day, 12, 0, 0);
 
     return Number.isNaN(parsed.getTime()) ? null : toIsoDate(parsed);
+  }
+
+  if (normalizedValue === "오늘밤무료" || normalizedValue === "오늘무료") {
+    const parsed = new Date(now);
+    parsed.setHours(12, 0, 0, 0);
+    return toIsoDate(parsed);
+  }
+
+  if (normalizedValue === "내일무료") {
+    const parsed = new Date(now);
+    parsed.setHours(12, 0, 0, 0);
+    parsed.setDate(parsed.getDate() + 1);
+    return toIsoDate(parsed);
+  }
+
+  if (normalizedValue === "모레무료") {
+    const parsed = new Date(now);
+    parsed.setHours(12, 0, 0, 0);
+    parsed.setDate(parsed.getDate() + 2);
+    return toIsoDate(parsed);
   }
 
   const relativeMatch = value.match(/(\d+)\s*일\s*후\s*무료/);
