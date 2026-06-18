@@ -148,13 +148,13 @@ function normalizeBucket(
   locale: Locale,
 ): { category: NaverSearchCategory; results: NaverSearchResult[] } {
   const labels = sourceLabelMap(locale);
-  const items = bucket?.searchViewList ?? [];
+  const items = (bucket?.searchViewList ?? []).filter((item) => !item.bm);
 
   return {
     category: {
       key: source,
       label: labels[source],
-      totalCount: bucket?.totalCount ?? items.length,
+      totalCount: items.length,
     },
     results: items.map((item) => ({
       id: String(item.titleId ?? item.contentId ?? item.titleName ?? Math.random()),
