@@ -2,6 +2,8 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { validateStoredNaverSession } from "@/lib/naver-session";
 
+export const runtime = "nodejs";
+
 export async function POST() {
   try {
     const session = await validateStoredNaverSession();

@@ -7,6 +7,8 @@ import {
   saveNaverSession,
 } from "@/lib/naver-session";
 
+export const runtime = "nodejs";
+
 type SaveNaverSessionBody = {
   cookieHeader?: string;
 };

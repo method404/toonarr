@@ -3,6 +3,8 @@ import { getStoredSeriesSummaries } from "@/lib/library-store";
 import { normalizeLocale } from "@/lib/locale";
 import { searchNaverWebtoons } from "@/lib/naver-search";
 
+export const runtime = "nodejs";
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get("q")?.trim() ?? "";

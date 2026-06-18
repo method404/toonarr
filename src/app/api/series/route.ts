@@ -4,6 +4,8 @@ import { getAppSettings } from "@/lib/app-settings";
 import { addSeriesToLibrary } from "@/lib/library-store";
 import type { MonitorMode } from "@/lib/types";
 
+export const runtime = "nodejs";
+
 type AddSeriesBody = {
   titleId?: number;
   rootFolder?: string;

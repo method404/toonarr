@@ -12,6 +12,8 @@ import type {
   UpdateProvider,
 } from "@/lib/app-settings";
 
+export const runtime = "nodejs";
+
 const validMonitorModes = new Set<MonitorMode>(["all", "future", "none"]);
 const validAuthModes = new Set<AppAuthMode>(["none", "form"]);
 const validAuthRequiredModes = new Set<AppAuthRequired>([

@@ -2,6 +2,8 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { buildSeriesSlug, retrySeriesEpisodeInLibrary } from "@/lib/library-store";
 
+export const runtime = "nodejs";
+
 type RouteContext = {
   params: Promise<{
     titleId: string;

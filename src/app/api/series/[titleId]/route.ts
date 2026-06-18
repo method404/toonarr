@@ -6,6 +6,8 @@ import {
   unmonitorSeriesInLibrary,
 } from "@/lib/library-store";
 
+export const runtime = "nodejs";
+
 type RouteContext = {
   params: Promise<{
     titleId: string;

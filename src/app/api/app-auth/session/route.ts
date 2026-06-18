@@ -7,6 +7,8 @@ import {
 } from "@/lib/app-auth";
 import { getAppSettings, updateAppSettings } from "@/lib/app-settings";
 
+export const runtime = "nodejs";
+
 type LoginBody = {
   username?: string;
   password?: string;
