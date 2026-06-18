@@ -1,4 +1,7 @@
-import { getNaverSessionCookieHeader } from "@/lib/naver-session";
+import {
+  getNaverSessionCookieHeader,
+  mergeNaverSessionSetCookieLines,
+} from "@/lib/naver-session";
 
 function shouldAttachNaverCookie(url: string) {
   const hostname = new URL(url).hostname;
@@ -70,11 +73,22 @@ async function performNaverFetch(
   init: RequestInit | undefined,
   cookieHeader: string | null,
 ) {
-  return fetch(url, {
+  const response = await fetch(url, {
     ...init,
     cache: "no-store",
     headers: withDefaultHeaders(url, init?.headers, cookieHeader),
   });
+
+  if (shouldAttachNaverCookie(url)) {
+    const setCookieLines =
+      typeof response.headers.getSetCookie === "function"
+        ? response.headers.getSetCookie()
+        : response.headers.get("set-cookie")?.split(/\r?\n/) ?? [];
+
+    await mergeNaverSessionSetCookieLines(setCookieLines).catch(() => undefined);
+  }
+
+  return response;
 }
 
 function getInternalAppUrl() {

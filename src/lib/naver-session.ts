@@ -42,6 +42,11 @@ type ValidateResult = {
   lastError: string | null;
 };
 
+type MergeCookieResult = {
+  cookieHeader: string;
+  changed: boolean;
+};
+
 function getDataRoot() {
   return path.join(process.cwd(), "data");
 }
@@ -92,6 +97,110 @@ function normalizeCookieHeader(rawValue: string) {
   return [...pairs.entries()]
     .map(([key, value]) => `${key}=${value}`)
     .join("; ");
+}
+
+function normalizeSetCookieLines(
+  rawValue: string | string[] | null | undefined,
+): string[] {
+  if (!rawValue) {
+    return [];
+  }
+
+  if (Array.isArray(rawValue)) {
+    return rawValue.map((value) => value.trim()).filter(Boolean);
+  }
+
+  return rawValue
+    .split(/\r?\n/)
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function parseSetCookieLine(rawLine: string) {
+  const [pairPart = "", ...attributeParts] = rawLine
+    .split(";")
+    .map((value) => value.trim());
+  const delimiterIndex = pairPart.indexOf("=");
+
+  if (delimiterIndex <= 0) {
+    return null;
+  }
+
+  const key = pairPart.slice(0, delimiterIndex).trim();
+  const value = pairPart.slice(delimiterIndex + 1).trim();
+  const attributes = new Map<string, string>();
+
+  for (const attribute of attributeParts) {
+    const attributeIndex = attribute.indexOf("=");
+
+    if (attributeIndex <= 0) {
+      attributes.set(attribute.toLowerCase(), "");
+      continue;
+    }
+
+    attributes.set(
+      attribute.slice(0, attributeIndex).trim().toLowerCase(),
+      attribute.slice(attributeIndex + 1).trim(),
+    );
+  }
+
+  return {
+    key,
+    value,
+    attributes,
+  };
+}
+
+function isExpiredCookie(attributes: Map<string, string>) {
+  const maxAge = attributes.get("max-age");
+
+  if (maxAge === "0") {
+    return true;
+  }
+
+  const expires = attributes.get("expires");
+
+  if (!expires) {
+    return false;
+  }
+
+  const expiresAt = new Date(expires);
+  return !Number.isNaN(expiresAt.getTime()) && expiresAt.getTime() <= Date.now();
+}
+
+function mergeCookieHeaders(
+  currentCookieHeader: string | null,
+  setCookieLines: string[] | null | undefined,
+): MergeCookieResult {
+  const currentPairs = extractCookiePairs(currentCookieHeader ?? "");
+  const nextPairs = new Map(currentPairs);
+  let changed = false;
+
+  for (const rawLine of normalizeSetCookieLines(setCookieLines)) {
+    const parsed = parseSetCookieLine(rawLine);
+
+    if (!parsed) {
+      continue;
+    }
+
+    if (!parsed.value || isExpiredCookie(parsed.attributes)) {
+      if (nextPairs.delete(parsed.key)) {
+        changed = true;
+      }
+      continue;
+    }
+
+    if (nextPairs.get(parsed.key) !== parsed.value) {
+      nextPairs.set(parsed.key, parsed.value);
+      changed = true;
+    }
+  }
+
+  const cookieHeader = [...nextPairs.entries()]
+    .map(([key, value]) => `${key}=${value}`)
+    .join("; ");
+
+  return { cookieHeader, changed };
 }
 
 function maskValue(value: string) {
@@ -153,6 +262,32 @@ async function readStoredSession() {
   } catch {
     return null;
   }
+}
+
+async function writeSessionFromCookieHeader(
+  cookieHeader: string,
+  options?: {
+    updatedAt?: string;
+    lastValidatedAt?: string | null;
+    isValid?: boolean | null;
+    adultAccess?: boolean | null;
+    lastError?: string | null;
+  },
+) {
+  const existing = await readStoredSession();
+  const now = options?.updatedAt ?? new Date().toISOString();
+  const session: StoredNaverSession = {
+    cookieHeader,
+    updatedAt: now,
+    lastValidatedAt:
+      options?.lastValidatedAt ?? existing?.lastValidatedAt ?? null,
+    isValid: options?.isValid ?? existing?.isValid ?? null,
+    adultAccess: options?.adultAccess ?? existing?.adultAccess ?? null,
+    lastError: options?.lastError ?? existing?.lastError ?? null,
+  };
+
+  await writeStoredSession(session);
+  return summarizeSession(session);
 }
 
 async function writeStoredSession(session: StoredNaverSession) {
@@ -277,10 +412,58 @@ export async function saveNaverSession(rawCookieHeader: string) {
   return summarizeSession(session);
 }
 
+export async function mergeNaverSessionSetCookieLines(
+  setCookieLines: string[] | null | undefined,
+) {
+  if (!setCookieLines?.length) {
+    return null;
+  }
+
+  const existing = await readStoredSession();
+
+  if (!existing?.cookieHeader) {
+    return null;
+  }
+
+  const merged = mergeCookieHeaders(existing.cookieHeader, setCookieLines);
+
+  if (!merged.changed || !merged.cookieHeader) {
+    return summarizeSession(existing);
+  }
+
+  return writeSessionFromCookieHeader(merged.cookieHeader, {
+    updatedAt: new Date().toISOString(),
+    lastValidatedAt: existing.lastValidatedAt,
+    isValid: true,
+    adultAccess: existing.adultAccess ?? true,
+    lastError: null,
+  });
+}
+
 export async function validateStoredNaverSession() {
   const session = await readStoredSession();
 
   if (!session) {
+    return summarizeSession(null);
+  }
+
+  const validation = await validateCookieHeader(session.cookieHeader);
+  const updatedSession: StoredNaverSession = {
+    ...session,
+    lastValidatedAt: new Date().toISOString(),
+    isValid: validation.isValid,
+    adultAccess: validation.adultAccess,
+    lastError: validation.lastError,
+  };
+
+  await writeStoredSession(updatedSession);
+  return summarizeSession(updatedSession);
+}
+
+export async function keepNaverSessionAlive() {
+  const session = await readStoredSession();
+
+  if (!session?.cookieHeader) {
     return summarizeSession(null);
   }
 
