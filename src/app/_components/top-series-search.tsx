@@ -19,6 +19,7 @@ type TopSeriesSearchResult = {
   lastUpdated: string;
   flags: string[];
   isAdult: boolean;
+  isPaid: boolean;
   storedSlug: string | null;
 };
 
@@ -189,6 +190,11 @@ export function TopSeriesSearch({
                       <div className="top-search-result-title-row">
                         <strong>{result.title}</strong>
                         <span className="tag-badge">{result.sourceLabel}</span>
+                        {result.flags.map((flag) => (
+                          <span key={flag} className="tag-badge subtle-tag">
+                            {flag}
+                          </span>
+                        ))}
                         {result.storedSlug ? (
                           <span className="tag-badge subtle-tag">
                             {locale === "ko" ? "저장됨" : "Stored"}

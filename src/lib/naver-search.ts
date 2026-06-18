@@ -77,6 +77,7 @@ export type NaverSearchResult = {
   tags: string[];
   flags: string[];
   isAdult: boolean;
+  isPaid: boolean;
 };
 
 export type NaverSearchPayload = {
@@ -148,7 +149,7 @@ function normalizeBucket(
   locale: Locale,
 ): { category: NaverSearchCategory; results: NaverSearchResult[] } {
   const labels = sourceLabelMap(locale);
-  const items = (bucket?.searchViewList ?? []).filter((item) => !item.bm);
+  const items = bucket?.searchViewList ?? [];
 
   return {
     category: {
@@ -184,6 +185,7 @@ function normalizeBucket(
       ],
       flags: normalizeFlags(item, locale),
       isAdult: Boolean(item.adult || item.nineteen),
+      isPaid: Boolean(item.bm),
     })),
   };
 }

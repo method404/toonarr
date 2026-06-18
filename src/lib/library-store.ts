@@ -1641,6 +1641,11 @@ export async function getStoredSeriesDetail(
 
 export async function addSeriesToLibrary(input: AddSeriesInput) {
   const snapshot = await fetchNaverSeriesSnapshot(input.titleId);
+
+  if (snapshot.metadata.isDailyPass) {
+    throw new Error("유료 웹툰은 지원하지 않습니다.");
+  }
+
   const resolvedRootFolder = await resolveRootFolder(input.rootFolder);
   const index = await readLibraryIndex();
   const existing = index.items.find((item) => item.titleId === snapshot.metadata.titleId);

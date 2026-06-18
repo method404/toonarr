@@ -13,6 +13,7 @@ type SeriesSelectionModalItem = {
   title: string;
   thumbnailUrl: string;
   isAdult: boolean;
+  isPaid?: boolean;
   sourceLabel?: string;
   authors?: string;
   rating?: string;
@@ -81,6 +82,10 @@ export function SeriesSelectionModal({
       locale === "ko"
         ? "시리즈를 저장하지 못했습니다."
         : "Failed to save series.",
+    paidUnsupported:
+      locale === "ko"
+        ? "유료 웹툰은 지원하지 않습니다."
+        : "Paid webtoons are not supported.",
   };
 
   const rootFolderSelectValue =
@@ -124,6 +129,11 @@ export function SeriesSelectionModal({
     }
 
     setError("");
+
+    if (item.isPaid) {
+      setError(labels.paidUnsupported);
+      return;
+    }
 
     startTransition(async () => {
       try {
@@ -235,6 +245,11 @@ export function SeriesSelectionModal({
             {item.sourceLabel ? (
               <div className="badge-list">
                 <span className="tag-badge">{item.sourceLabel}</span>
+                {item.isPaid ? (
+                  <span className="tag-badge subtle-tag">
+                    {locale === "ko" ? "유료" : "Paid"}
+                  </span>
+                ) : null}
               </div>
             ) : null}
             {item.overview ? (

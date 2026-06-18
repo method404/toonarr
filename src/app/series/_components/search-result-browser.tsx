@@ -159,6 +159,7 @@ export function SearchResultBrowser({
             title: selectedItem.title,
             thumbnailUrl: selectedItem.thumbnailUrl,
             isAdult: selectedItem.isAdult,
+            isPaid: selectedItem.isPaid,
             sourceLabel: selectedItem.sourceLabel,
             authors: selectedItem.authors,
             overview: selectedItem.synopsis,
