@@ -6,6 +6,7 @@ import {
   getNaverCredentialSummary,
   saveNaverCredentials,
 } from "@/lib/naver-credentials";
+import { clearNaverRemoteAuthAttempt } from "@/lib/naver-remote-auth";
 import { clearNaverSession } from "@/lib/naver-session";
 
 type SaveNaverCredentialsBody = {
@@ -43,6 +44,7 @@ export async function PUT(request: Request) {
 export async function DELETE() {
   await clearNaverCredentials();
   await clearNaverSession();
+  await clearNaverRemoteAuthAttempt();
   await resetNaverBrowserLoginState();
   revalidatePath("/settings");
   return NextResponse.json({ ok: true });

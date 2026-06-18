@@ -1224,6 +1224,44 @@ textarea {
   line-height: 1.35;
 }
 
+.settings-remote-auth-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #313b46;
+  border-radius: 12px;
+  background: #18202a;
+}
+
+.settings-remote-auth-qr {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 220px;
+  padding: 10px;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.settings-remote-auth-qr img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.settings-remote-auth-link-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-remote-auth-label {
+  color: #f2f5f8;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
 .settings-inline-note {
   grid-column: 2;
   margin: 0;

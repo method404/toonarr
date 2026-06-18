@@ -1,9 +1,13 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState, useTransition } from "react";
 import type { NaverCredentialSummary } from "@/lib/naver-credentials";
-import type { NaverBrowserLoginStatus } from "@/lib/naver-login-browser";
 import type { Locale } from "@/lib/locale";
+import type {
+  NaverRemoteAuthAttemptSummary,
+  NaverRemoteAuthState,
+} from "@/lib/naver-remote-auth";
 import type { NaverSessionSummary } from "@/lib/naver-session";
 
 type NaverSessionSettingsProps = {
@@ -41,6 +45,55 @@ function getAdultAccessLabel(value: boolean | null, locale: Locale) {
       : "Unavailable";
 }
 
+function getRemoteAuthStateLabel(state: NaverRemoteAuthState, locale: Locale) {
+  if (locale !== "ko") {
+    switch (state) {
+      case "pending":
+        return "Waiting for login";
+      case "verified":
+        return "Login confirmed";
+      case "capturing":
+        return "Saving session";
+      case "completed":
+        return "Completed";
+      case "failed":
+        return "Failed";
+      case "expired":
+        return "Expired";
+      default:
+        return "Idle";
+    }
+  }
+
+  switch (state) {
+    case "pending":
+      return "로그인 대기";
+    case "verified":
+      return "로그인 확인됨";
+    case "capturing":
+      return "세션 저장 중";
+    case "completed":
+      return "완료";
+    case "failed":
+      return "실패";
+    case "expired":
+      return "만료됨";
+    default:
+      return "대기 없음";
+  }
+}
+
+async function fetchSessionSummary() {
+  const response = await fetch("/api/settings/naver-session", {
+    cache: "no-store",
+  });
+  const payload = (await response.json()) as {
+    session?: NaverSessionSummary;
+  };
+
+  return response.ok ? payload.session ?? null : null;
+}
+
 export function NaverSessionSettings({
   locale,
   initialSession,
@@ -50,21 +103,14 @@ export function NaverSessionSettings({
   const [credentials, setCredentials] = useState(initialCredentials);
   const [username, setUsername] = useState(initialCredentials.username ?? "");
   const [password, setPassword] = useState("");
-  const [loginStatus, setLoginStatus] = useState<NaverBrowserLoginStatus>({
-    state: "idle",
-    message:
-      locale === "ko"
-        ? "브라우저 로그인 대기 중이 아닙니다."
-        : "No browser login in progress.",
-    startedAt: null,
-    updatedAt: null,
-    currentUrl: null,
-    session: null,
-  });
+  const [remoteAttempt, setRemoteAttempt] = useState<NaverRemoteAuthAttemptSummary | null>(
+    null,
+  );
+  const [remoteQrDataUrl, setRemoteQrDataUrl] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [pendingAction, setPendingAction] = useState<
-    "credentialSave" | "credentialClear" | null
+    "credentialSave" | "credentialClear" | "remoteStart" | null
   >(null);
   const [isPending, startTransition] = useTransition();
 
@@ -72,11 +118,18 @@ export function NaverSessionSettings({
     credentials: locale === "ko" ? "네이버 계정" : "Naver account",
     username: locale === "ko" ? "네이버 ID" : "Naver ID",
     password: locale === "ko" ? "비밀번호" : "Password",
+    status: locale === "ko" ? "상태" : "Status",
     lastUsedAt: locale === "ko" ? "마지막 자동 로그인" : "Last auto login",
     adultAccess:
       locale === "ko" ? "성인컨텐츠 접근" : "Adult content access",
+    remoteLogin:
+      locale === "ko" ? "원격 로그인" : "Remote sign-in",
     saveAccount: locale === "ko" ? "계정 저장" : "Save account",
     savingAccount: locale === "ko" ? "저장 중..." : "Saving...",
+    startRemoteLogin:
+      locale === "ko" ? "원격 로그인 시작" : "Start remote sign-in",
+    startingRemoteLogin:
+      locale === "ko" ? "링크 생성 중..." : "Creating link...",
     clearAccount: locale === "ko" ? "계정 삭제" : "Delete account",
     clearingAccount: locale === "ko" ? "삭제 중..." : "Deleting...",
     configuredSummary:
@@ -89,33 +142,42 @@ export function NaverSessionSettings({
         : "Saved account for automatic sign-in.",
     credentialCleared:
       locale === "ko" ? "저장된 계정을 삭제했습니다." : "Stored account deleted.",
-    browserOpened:
+    remoteStarted:
       locale === "ko"
-        ? "브라우저 로그인 창을 열었습니다. 로그인 성공 후 계정이 저장됩니다."
-        : "Opened the browser login window. The account will be saved after login succeeds.",
+        ? "원격 로그인 링크를 만들었습니다. 외부 브라우저에서 로그인하고 '이 기기에서 2단계 인증 요청 안함'을 체크하세요."
+        : "Created a remote sign-in link. Complete login in an external browser and enable trusted device.",
     credentialError:
       locale === "ko" ? "계정 저장에 실패했습니다." : "Failed to save account.",
-    browserOpenError:
+    remoteError:
       locale === "ko"
-        ? "브라우저 로그인 창을 열지 못했습니다."
-        : "Failed to open the browser login window.",
+        ? "원격 로그인 링크를 만들지 못했습니다."
+        : "Failed to create remote sign-in link.",
+    remoteGuide:
+      locale === "ko"
+        ? "PC나 휴대폰에서 아래 링크 또는 QR을 열고 네이버 로그인과 브라우저 신뢰 설정을 완료하세요."
+        : "Open the link or QR below on another device and finish Naver login with trusted-device enabled.",
+    remoteLink: locale === "ko" ? "원격 로그인 링크" : "Remote sign-in link",
+    expiresAt: locale === "ko" ? "만료 시각" : "Expires at",
+    openLink: locale === "ko" ? "링크 열기" : "Open link",
   };
 
   useEffect(() => {
     void (async () => {
       try {
-        const response = await fetch("/api/settings/naver-session/login");
+        const response = await fetch("/api/settings/naver-session/remote", {
+          cache: "no-store",
+        });
         const payload = (await response.json()) as {
-          login?: NaverBrowserLoginStatus;
+          attempt?: NaverRemoteAuthAttemptSummary;
+          qrDataUrl?: string | null;
         };
 
-        if (response.ok && payload.login) {
-          setLoginStatus(payload.login);
-
-          if (payload.login.session) {
-            setSession(payload.login.session);
-          }
+        if (!response.ok || !payload.attempt) {
+          return;
         }
+
+        setRemoteAttempt(payload.attempt.configured ? payload.attempt : null);
+        setRemoteQrDataUrl(payload.qrDataUrl ?? null);
       } catch {
         return;
       }
@@ -124,60 +186,52 @@ export function NaverSessionSettings({
 
   useEffect(() => {
     if (
-      loginStatus.state !== "launching" &&
-      loginStatus.state !== "waiting" &&
-      loginStatus.state !== "capturing"
+      !remoteAttempt ||
+      !["pending", "verified", "capturing"].includes(remoteAttempt.state)
     ) {
       return;
     }
 
     const timer = window.setInterval(async () => {
       try {
-        const response = await fetch("/api/settings/naver-session/login");
+        const response = await fetch("/api/settings/naver-session/remote", {
+          cache: "no-store",
+        });
         const payload = (await response.json()) as {
-          login?: NaverBrowserLoginStatus;
+          attempt?: NaverRemoteAuthAttemptSummary;
+          qrDataUrl?: string | null;
         };
 
-        if (!response.ok || !payload.login) {
+        if (!response.ok || !payload.attempt) {
           return;
         }
 
-        setLoginStatus(payload.login);
+        setRemoteAttempt(payload.attempt.configured ? payload.attempt : null);
+        setRemoteQrDataUrl(payload.qrDataUrl ?? null);
 
-        if (payload.login.session) {
-          setSession(payload.login.session);
-          const credentialResponse = await fetch("/api/settings/naver-credentials", {
-            cache: "no-store",
-          }).catch(() => null);
+        if (payload.attempt.state === "completed") {
+          const nextSession = await fetchSessionSummary();
 
-          if (credentialResponse?.ok) {
-            const credentialPayload = (await credentialResponse.json()) as {
-              credentials?: NaverCredentialSummary;
-            };
-
-            if (credentialPayload.credentials) {
-              setCredentials(credentialPayload.credentials);
-              setUsername(credentialPayload.credentials.username ?? "");
-            }
+          if (nextSession) {
+            setSession(nextSession);
           }
 
-          setPassword("");
           setMessage(
             locale === "ko"
-              ? "브라우저 로그인 세션을 자동 저장했습니다."
-              : "Browser login session captured automatically.",
+              ? "원격 로그인이 끝났고 네이버 세션을 저장했습니다."
+              : "Remote sign-in finished and the Naver session was saved.",
           );
           setError("");
         }
       } catch {
         return;
       }
-    }, 1500);
+    }, 2000);
 
     return () => {
       window.clearInterval(timer);
     };
-  }, [locale, loginStatus.state]);
+  }, [locale, remoteAttempt]);
 
   return (
     <div className="settings-page">
@@ -221,7 +275,7 @@ export function NaverSessionSettings({
 
           <div className="settings-form-row">
             <div className="settings-form-label">
-              <h3>{locale === "ko" ? "상태" : "Status"}</h3>
+              <h3>{labels.status}</h3>
             </div>
             <div className="settings-form-control">
               <p className="settings-summary-line">
@@ -253,6 +307,66 @@ export function NaverSessionSettings({
               </strong>
             </div>
           </div>
+
+          <div className="settings-form-row">
+            <div className="settings-form-label">
+              <h3>{labels.remoteLogin}</h3>
+            </div>
+            <div className="settings-form-control">
+              <strong className="settings-inline-value">
+                {getRemoteAuthStateLabel(remoteAttempt?.state ?? "idle", locale)}
+              </strong>
+
+              {remoteAttempt?.configured && remoteAttempt.startUrl ? (
+                <div className="settings-remote-auth-box">
+                  <p className="settings-meta-note">{labels.remoteGuide}</p>
+
+                  {remoteQrDataUrl ? (
+                    <div className="settings-remote-auth-qr">
+                      <Image
+                        src={remoteQrDataUrl}
+                        alt="Remote login QR"
+                        width={220}
+                        height={220}
+                        unoptimized
+                      />
+                    </div>
+                  ) : null}
+
+                  <div className="settings-remote-auth-link-row">
+                    <span className="settings-remote-auth-label">{labels.remoteLink}</span>
+                    <input
+                      className="settings-input"
+                      type="text"
+                      readOnly
+                      value={remoteAttempt.startUrl}
+                    />
+                  </div>
+
+                  <div className="settings-inline-actions">
+                    <a
+                      className="button"
+                      href={remoteAttempt.startUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {labels.openLink}
+                    </a>
+                  </div>
+
+                  <p className="settings-meta-note">
+                    {labels.expiresAt}: {formatDateTime(remoteAttempt.expiresAt, locale)}
+                  </p>
+
+                  {remoteAttempt.error ? (
+                    <p className="settings-error-inline">{remoteAttempt.error}</p>
+                  ) : null}
+                </div>
+              ) : (
+                <p className="settings-meta-note">{labels.remoteGuide}</p>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="settings-panel-footer settings-panel-footer-split">
@@ -260,14 +374,7 @@ export function NaverSessionSettings({
             <button
               type="button"
               className="button button-success"
-              disabled={
-                isPending ||
-                username.trim().length === 0 ||
-                password.length === 0 ||
-                loginStatus.state === "launching" ||
-                loginStatus.state === "waiting" ||
-                loginStatus.state === "capturing"
-              }
+              disabled={isPending || username.trim().length === 0 || password.length === 0}
               onClick={() => {
                 setMessage("");
                 setError("");
@@ -275,8 +382,8 @@ export function NaverSessionSettings({
 
                 startTransition(async () => {
                   try {
-                    const response = await fetch("/api/settings/naver-session/login", {
-                      method: "POST",
+                    const response = await fetch("/api/settings/naver-credentials", {
+                      method: "PUT",
                       headers: {
                         "content-type": "application/json",
                       },
@@ -284,15 +391,18 @@ export function NaverSessionSettings({
                     });
                     const payload = (await response.json()) as {
                       error?: string;
-                      login?: NaverBrowserLoginStatus;
+                      credentials?: NaverCredentialSummary;
                     };
 
-                    if (!response.ok || !payload.login) {
-                      throw new Error(payload.error ?? labels.browserOpenError);
+                    if (!response.ok || !payload.credentials) {
+                      throw new Error(payload.error ?? labels.credentialError);
                     }
 
-                    setLoginStatus(payload.login);
-                    setMessage(labels.browserOpened);
+                    setCredentials(payload.credentials);
+                    setUsername(payload.credentials.username ?? "");
+                    setPassword("");
+                    setMessage(labels.credentialSaved);
+                    setError("");
                   } catch (requestError) {
                     setError(
                       requestError instanceof Error
@@ -308,6 +418,87 @@ export function NaverSessionSettings({
               {pendingAction === "credentialSave" && isPending
                 ? labels.savingAccount
                 : labels.saveAccount}
+            </button>
+
+            <button
+              type="button"
+              className="button"
+              disabled={
+                isPending ||
+                (!credentials.configured &&
+                  (username.trim().length === 0 || password.length === 0))
+              }
+              onClick={() => {
+                setMessage("");
+                setError("");
+                setPendingAction("remoteStart");
+
+                startTransition(async () => {
+                  try {
+                    let nextCredentials = credentials;
+
+                    if (!credentials.configured && username.trim() && password.length > 0) {
+                      const credentialResponse = await fetch(
+                        "/api/settings/naver-credentials",
+                        {
+                          method: "PUT",
+                          headers: {
+                            "content-type": "application/json",
+                          },
+                          body: JSON.stringify({ username, password }),
+                        },
+                      );
+                      const credentialPayload = (await credentialResponse.json()) as {
+                        error?: string;
+                        credentials?: NaverCredentialSummary;
+                      };
+
+                      if (!credentialResponse.ok || !credentialPayload.credentials) {
+                        throw new Error(credentialPayload.error ?? labels.credentialError);
+                      }
+
+                      nextCredentials = credentialPayload.credentials;
+                      setCredentials(credentialPayload.credentials);
+                      setUsername(credentialPayload.credentials.username ?? "");
+                      setPassword("");
+                    }
+
+                    if (!nextCredentials.configured) {
+                      throw new Error(labels.credentialError);
+                    }
+
+                    const response = await fetch("/api/settings/naver-session/remote", {
+                      method: "POST",
+                    });
+                    const payload = (await response.json()) as {
+                      error?: string;
+                      attempt?: NaverRemoteAuthAttemptSummary;
+                      qrDataUrl?: string | null;
+                    };
+
+                    if (!response.ok || !payload.attempt) {
+                      throw new Error(payload.error ?? labels.remoteError);
+                    }
+
+                    setRemoteAttempt(payload.attempt);
+                    setRemoteQrDataUrl(payload.qrDataUrl ?? null);
+                    setMessage(labels.remoteStarted);
+                    setError("");
+                  } catch (requestError) {
+                    setError(
+                      requestError instanceof Error
+                        ? requestError.message
+                        : labels.remoteError,
+                    );
+                  } finally {
+                    setPendingAction(null);
+                  }
+                });
+              }}
+            >
+              {pendingAction === "remoteStart" && isPending
+                ? labels.startingRemoteLogin
+                : labels.startRemoteLogin}
             </button>
           </div>
 
@@ -354,20 +545,12 @@ export function NaverSessionSettings({
                       },
                       maskedCookieHeader: "",
                     });
-                    setLoginStatus({
-                      state: "idle",
-                      message:
-                        locale === "ko"
-                          ? "브라우저 로그인 대기 중이 아닙니다."
-                          : "No browser login in progress.",
-                      startedAt: null,
-                      updatedAt: null,
-                      currentUrl: null,
-                      session: null,
-                    });
+                    setRemoteAttempt(null);
+                    setRemoteQrDataUrl(null);
                     setUsername("");
                     setPassword("");
                     setMessage(labels.credentialCleared);
+                    setError("");
                   } catch (requestError) {
                     setError(
                       requestError instanceof Error

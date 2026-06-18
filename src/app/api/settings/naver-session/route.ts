@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { resetNaverBrowserLoginState } from "@/lib/naver-login-browser";
+import { clearNaverRemoteAuthAttempt } from "@/lib/naver-remote-auth";
 import {
   clearNaverSession,
   getNaverSessionSummary,
@@ -43,6 +44,7 @@ export async function PUT(request: Request) {
 
 export async function DELETE() {
   await clearNaverSession();
+  await clearNaverRemoteAuthAttempt();
   await resetNaverBrowserLoginState();
   revalidatePath("/settings");
   return NextResponse.json({ ok: true });
