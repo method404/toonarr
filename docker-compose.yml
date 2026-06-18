@@ -8,6 +8,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      # Optional: set these to match your NAS user for bind-mounted folders.
+      PUID: "${PUID:-}"
+      PGID: "${PGID:-}"
     volumes:
       - toonarr-data:/app/data
     restart: unless-stopped

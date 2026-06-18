@@ -222,8 +222,9 @@ async function promptHidden(query) {
       originalWrite(stringToWrite);
     };
 
+    output.write(query);
     rl.stdoutMuted = true;
-    rl.question(query, (answer) => {
+    rl.question("", (answer) => {
       rl.close();
       output.write("\n");
       resolve(answer.trim());

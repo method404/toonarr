@@ -14,13 +14,14 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends chromium ca-certificates fonts-noto-color-emoji \
+  && apt-get install -y --no-install-recommends chromium ca-certificates fonts-noto-color-emoji gosu \
   && rm -rf /var/lib/apt/lists/*
 RUN groupadd --system appgroup && useradd --system --gid appgroup --create-home appuser
-RUN mkdir -p /app/data && chown -R appuser:appgroup /app/data
+RUN mkdir -p /app/data /app/storage && chown -R appuser:appgroup /app/data /app/storage
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
-USER appuser
+COPY docker/entrypoint.sh /usr/local/bin/toonarr-entrypoint
+RUN chmod +x /usr/local/bin/toonarr-entrypoint
 EXPOSE 3000
-CMD ["node", "server.js"]
+ENTRYPOINT ["/usr/local/bin/toonarr-entrypoint"]
