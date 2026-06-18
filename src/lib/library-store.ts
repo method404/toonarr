@@ -975,13 +975,34 @@ async function writeSeriesSnapshot(
   storagePath: string,
 ) {
   const episodes = mergeUniqueEpisodes(snapshot.episodes, snapshot.paidEpisodes);
+  const manifests = await Promise.all(
+    episodes.map(async (episode) => {
+      const existingManifest = await readEpisodeArchiveManifest(
+        snapshot.metadata.titleId,
+        episode.no,
+      );
+      const preserveDownloadedState =
+        existingManifest?.crawl.status === "downloaded";
+      const preservePaidPreviewState =
+        existingManifest?.crawl.status === "preview" && episode.isPaid;
+
+      return buildEpisodeArchiveManifest(
+        storagePath,
+        snapshot.metadata.titleId,
+        episode,
+        preserveDownloadedState || preservePaidPreviewState
+          ? existingManifest.crawl
+          : undefined,
+      );
+    }),
+  );
 
   await Promise.all([
     writeSeriesCatalogSnapshot(snapshot),
-    ...episodes.map((episode) =>
+    ...manifests.map((manifest) =>
       writeJsonFile(
-        getSeriesEpisodeManifestPath(snapshot.metadata.titleId, episode.no),
-        buildEpisodeArchiveManifest(storagePath, snapshot.metadata.titleId, episode),
+        getSeriesEpisodeManifestPath(snapshot.metadata.titleId, manifest.no),
+        manifest,
       ),
     ),
   ]);
