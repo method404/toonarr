@@ -366,7 +366,6 @@ function computeNextCheck(
 
   if (nextPreviewAirDate) {
     const previewCheckDate = buildScheduledCheckDate(nextPreviewAirDate);
-    previewCheckDate.setDate(previewCheckDate.getDate() - 1);
 
     if (previewCheckDate.getTime() > now.getTime()) {
       return previewCheckDate.toISOString();
