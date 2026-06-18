@@ -74,6 +74,7 @@ export function FinishedFreeBrowser({
   defaultMonitorMode,
 }: FinishedFreeBrowserProps) {
   const [items, setItems] = useState(initialItems);
+  const [storedMap, setStoredMap] = useState(storedSeriesByTitleId);
   const [page, setPage] = useState(initialPage);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [isLoading, setIsLoading] = useState(false);
@@ -172,7 +173,7 @@ export function FinishedFreeBrowser({
               const storedSlug =
                 item.titleId === null
                   ? null
-                  : storedSeriesByTitleId[String(item.titleId)] ?? null;
+                  : storedMap[String(item.titleId)] ?? null;
 
               const cardContent = (
                 <>
@@ -198,6 +199,11 @@ export function FinishedFreeBrowser({
                       <div className="search-result-heading">
                         <div className="search-result-title-row">
                           <h3>{item.title}</h3>
+                          {storedSlug ? (
+                            <span className="tag-badge added-state-badge">
+                              {locale === "ko" ? "이미 추가됨" : "Added"}
+                            </span>
+                          ) : null}
                           {item.flags.map((flag) => (
                             <span key={flag} className="tag-badge subtle-tag">
                               {flag}
@@ -299,6 +305,12 @@ export function FinishedFreeBrowser({
           locale={locale}
           defaultRootFolder={defaultRootFolder}
           defaultMonitorMode={defaultMonitorMode}
+          onAdded={({ titleId, slug }) =>
+            setStoredMap((current) => ({
+              ...current,
+              [String(titleId)]: slug,
+            }))
+          }
           onClose={() => setSelectedId(null)}
         />
       ) : null}

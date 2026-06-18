@@ -2740,6 +2740,14 @@ textarea {
   flex-direction: column;
 }
 
+.weekday-title-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
 .weekday-tile strong {
   display: block;
   font-size: 1.08rem;
@@ -2748,6 +2756,10 @@ textarea {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.weekday-added-badge {
+  flex: 0 0 auto;
 }
 
 .weekday-score {
@@ -3017,6 +3029,12 @@ textarea {
 .subtle-tag {
   border-color: #586372;
   background: #414b57;
+  color: #ffffff;
+}
+
+.added-state-badge {
+  border-color: #1f6c44;
+  background: #1f6c44;
   color: #ffffff;
 }
 

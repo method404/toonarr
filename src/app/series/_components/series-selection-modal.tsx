@@ -25,6 +25,7 @@ type SeriesSelectionModalProps = {
   defaultRootFolder: string;
   defaultMonitorMode: MonitorMode;
   onClose: () => void;
+  onAdded?: (payload: { titleId: number; slug: string }) => void;
 };
 
 type DirectoryPayload = {
@@ -43,6 +44,7 @@ export function SeriesSelectionModal({
   defaultRootFolder,
   defaultMonitorMode,
   onClose,
+  onAdded,
 }: SeriesSelectionModalProps) {
   const router = useRouter();
   const [rootFolder, setRootFolder] = useState(defaultRootFolder);
@@ -144,7 +146,17 @@ export function SeriesSelectionModal({
           throw new Error(payload?.error || `Series save failed: ${response.status}`);
         }
 
-        router.push("/series");
+        const payload = (await response.json().catch(() => null)) as
+          | { ok?: boolean; entry?: { titleId?: number; slug?: string } }
+          | null;
+
+        if (payload?.entry?.titleId && payload.entry.slug) {
+          onAdded?.({
+            titleId: payload.entry.titleId,
+            slug: payload.entry.slug,
+          });
+        }
+
         router.refresh();
         onClose();
       } catch (error) {

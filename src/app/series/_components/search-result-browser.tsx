@@ -33,6 +33,7 @@ export function SearchResultBrowser({
   const [selectedId, setSelectedId] = useState<string | null>(
     initialSelectedId || null,
   );
+  const [storedMap, setStoredMap] = useState(storedSeriesByTitleId);
 
   const selectedItem =
     selectedId === null
@@ -48,7 +49,7 @@ export function SearchResultBrowser({
           const storedSlug =
             result.titleId === null
               ? null
-              : storedSeriesByTitleId[String(result.titleId)] ?? null;
+              : storedMap[String(result.titleId)] ?? null;
           const cardContent = (
             <>
               <div className="search-result-poster">
@@ -73,6 +74,11 @@ export function SearchResultBrowser({
                   <div className="search-result-heading">
                     <div className="search-result-title-row">
                       <h3>{result.title}</h3>
+                      {storedSlug ? (
+                        <span className="tag-badge added-state-badge">
+                          {locale === "ko" ? "이미 추가됨" : "Added"}
+                        </span>
+                      ) : null}
                       <span className="tag-badge">{result.sourceLabel}</span>
                       {result.flags.map((flag) => (
                         <span key={flag} className="tag-badge subtle-tag">
@@ -160,6 +166,12 @@ export function SearchResultBrowser({
           locale={locale}
           defaultRootFolder={defaultRootFolder}
           defaultMonitorMode={defaultMonitorMode}
+          onAdded={({ titleId, slug }) =>
+            setStoredMap((current) => ({
+              ...current,
+              [String(titleId)]: slug,
+            }))
+          }
           onClose={() => setSelectedId(null)}
         />
       ) : null}

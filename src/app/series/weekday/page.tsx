@@ -2,6 +2,7 @@ import { AdminShell } from "@/app/_components/admin-shell";
 import { WeekdaySeriesBrowser } from "@/app/series/_components/weekday-series-browser";
 import { getAppSettings } from "@/lib/app-settings";
 import { getDictionary } from "@/lib/i18n";
+import { getStoredSeriesSummaries } from "@/lib/library-store";
 import { getLocale } from "@/lib/locale";
 import {
   getNaverWeekdaySections,
@@ -25,10 +26,14 @@ export default async function SeriesWeekdayPage(
   const dict = getDictionary(locale);
   const searchParams = await props.searchParams;
   const order = isWeekdayOrder(searchParams.order) ? searchParams.order : "user";
-  const [weekdaySections, settings] = await Promise.all([
+  const [weekdaySections, storedSeries, settings] = await Promise.all([
     getNaverWeekdaySections(locale, order),
+    getStoredSeriesSummaries(),
     getAppSettings(),
   ]);
+  const storedSeriesByTitleId = Object.fromEntries(
+    storedSeries.map((item) => [String(item.titleId), item.slug]),
+  );
 
   const labels = {
     filters: locale === "ko" ? "정렬" : "Sort",
@@ -57,6 +62,7 @@ export default async function SeriesWeekdayPage(
         locale={locale}
         order={order}
         sections={weekdaySections}
+        storedSeriesByTitleId={storedSeriesByTitleId}
         defaultRootFolder={settings.library.defaultRootFolder}
         defaultMonitorMode={settings.library.defaultMonitorMode}
       />

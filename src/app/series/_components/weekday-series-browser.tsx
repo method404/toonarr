@@ -14,6 +14,7 @@ type WeekdaySeriesBrowserProps = {
   locale: Locale;
   order: WeekdayOrder;
   sections: WeekdaySection[];
+  storedSeriesByTitleId: Record<string, string>;
   defaultRootFolder: string;
   defaultMonitorMode: MonitorMode;
   labels: {
@@ -26,11 +27,13 @@ export function WeekdaySeriesBrowser({
   locale,
   order,
   sections,
+  storedSeriesByTitleId,
   defaultRootFolder,
   defaultMonitorMode,
   labels,
 }: WeekdaySeriesBrowserProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [storedMap, setStoredMap] = useState(storedSeriesByTitleId);
 
   const selectedItem =
     selectedId === null
@@ -66,40 +69,72 @@ export function WeekdaySeriesBrowser({
               </header>
 
               <div className="weekday-column-list">
-                {section.items.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className="weekday-tile weekday-tile-button"
-                    onClick={() => setSelectedId(item.id)}
-                  >
-                    <div className="weekday-thumb">
-                      {item.isAdult ? (
-                        <AdultBadge size={34} className="weekday-adult-badge" />
-                      ) : null}
-                      {item.thumbnailUrl ? (
-                        <Image
-                          src={item.thumbnailUrl}
-                          alt={item.title}
-                          width={480}
-                          height={623}
-                          unoptimized
-                        />
-                      ) : (
-                        <div className="weekday-thumb-fallback" />
-                      )}
-                    </div>
-                    <div className="weekday-title-line">
-                      <strong>{item.title}</strong>
-                      <span className="weekday-score">
-                        <span className="weekday-star" aria-hidden="true">
-                          ★
+                {section.items.map((item) => {
+                  const storedSlug =
+                    item.titleId === null
+                      ? null
+                      : storedMap[String(item.titleId)] ?? null;
+
+                  const cardContent = (
+                    <>
+                      <div className="weekday-thumb">
+                        {item.isAdult ? (
+                          <AdultBadge size={34} className="weekday-adult-badge" />
+                        ) : null}
+                        {item.thumbnailUrl ? (
+                          <Image
+                            src={item.thumbnailUrl}
+                            alt={item.title}
+                            width={480}
+                            height={623}
+                            unoptimized
+                          />
+                        ) : (
+                          <div className="weekday-thumb-fallback" />
+                        )}
+                      </div>
+                      <div className="weekday-title-line">
+                        <div className="weekday-title-head">
+                          <strong>{item.title}</strong>
+                          {storedSlug ? (
+                            <span className="tag-badge added-state-badge weekday-added-badge">
+                              {locale === "ko" ? "이미 추가됨" : "Added"}
+                            </span>
+                          ) : null}
+                        </div>
+                        <span className="weekday-score">
+                          <span className="weekday-star" aria-hidden="true">
+                            ★
+                          </span>
+                          {item.starScore}
                         </span>
-                        {item.starScore}
-                      </span>
-                    </div>
-                  </button>
-                ))}
+                      </div>
+                    </>
+                  );
+
+                  if (storedSlug) {
+                    return (
+                      <Link
+                        key={item.id}
+                        href={`/series/${storedSlug}`}
+                        className="weekday-tile weekday-tile-button"
+                      >
+                        {cardContent}
+                      </Link>
+                    );
+                  }
+
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className="weekday-tile weekday-tile-button"
+                      onClick={() => setSelectedId(item.id)}
+                    >
+                      {cardContent}
+                    </button>
+                  );
+                })}
               </div>
             </section>
           ))}
@@ -121,6 +156,12 @@ export function WeekdaySeriesBrowser({
           locale={locale}
           defaultRootFolder={defaultRootFolder}
           defaultMonitorMode={defaultMonitorMode}
+          onAdded={({ titleId, slug }) =>
+            setStoredMap((current) => ({
+              ...current,
+              [String(titleId)]: slug,
+            }))
+          }
           onClose={() => setSelectedId(null)}
         />
       ) : null}
