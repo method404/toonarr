@@ -59,6 +59,12 @@ async function resolveBrowserLaunchOptions() {
     "/Applications/Chromium.app/Contents/MacOS/Chromium",
     "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
     "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+    "/usr/bin/google-chrome",
+    "/usr/bin/google-chrome-stable",
+    "/usr/bin/microsoft-edge",
+    "/usr/bin/microsoft-edge-stable",
   ];
 
   for (const executablePath of candidates) {

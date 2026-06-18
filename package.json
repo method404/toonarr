@@ -2,6 +2,9 @@
   "name": "naverrr",
   "version": "0.1.0",
   "private": true,
+  "bin": {
+    "toonarr-naver-bridge": "./scripts/naver-session-bridge.mjs"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

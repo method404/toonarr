@@ -1,5 +1,5 @@
 services:
-  naverrr:
+  toonarr:
     build:
       context: .
       dockerfile: Dockerfile
@@ -9,8 +9,8 @@ services:
       NODE_ENV: production
       PORT: 3000
     volumes:
-      - naverrr-data:/app/data
+      - toonarr-data:/app/data
     restart: unless-stopped
 
 volumes:
-  naverrr-data:
+  toonarr-data:

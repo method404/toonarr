@@ -49,18 +49,15 @@ export function NaverSessionSettings({
   const [credentials, setCredentials] = useState(initialCredentials);
   const [username, setUsername] = useState(initialCredentials.username ?? "");
   const [password, setPassword] = useState("");
-  const [toonarrUrl] = useState(() =>
-    typeof window === "undefined" ? "" : window.location.origin,
-  );
+  const toonarrUrl =
+    typeof window === "undefined" ? "http://NAS_IP:3000" : window.location.origin;
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [pendingAction, setPendingAction] = useState<
     "credentialSave" | "credentialClear" | "bridgeCopy" | null
   >(null);
   const [isPending, startTransition] = useTransition();
-  const bridgeCommand = toonarrUrl
-    ? `npm run naver:bridge -- --toonarr-url ${toonarrUrl} --username "${username || "NAVER_ID"}" --password "NAVER_PW"`
-    : `npm run naver:bridge -- --toonarr-url http://NAS_IP:3000 --username "NAVER_ID" --password "NAVER_PW"`;
+  const bridgeCommand = `npm exec --yes --package=github:method404/toonarr toonarr-naver-bridge -- --toonarr-url ${toonarrUrl} --username "${username || "NAVER_ID"}"`;
 
   const labels = {
     credentials: locale === "ko" ? "네이버 계정" : "Naver account",
@@ -92,10 +89,6 @@ export function NaverSessionSettings({
       locale === "ko" ? "저장된 계정을 삭제했습니다." : "Stored account deleted.",
     credentialError:
       locale === "ko" ? "계정 저장에 실패했습니다." : "Failed to save account.",
-    bridgeGuide:
-      locale === "ko"
-        ? "NAS가 아니라 외부 PC에서 아래 명령을 실행하면 브라우저가 열립니다. 그 브라우저에서 네이버 로그인, 2단계 인증, '이 기기에서 2단계 인증 요청 안함'까지 끝내면 세션이 NAS Toonarr로 업로드됩니다."
-        : "Run the command below on an external PC. It opens a browser, completes Naver login and device trust, then uploads the session to Toonarr.",
     bridgeCommand: locale === "ko" ? "실행 명령" : "Command",
     bridgeCopied:
       locale === "ko" ? "브릿지 명령을 복사했습니다." : "Copied the bridge command.",
@@ -184,10 +177,42 @@ export function NaverSessionSettings({
             </div>
             <div className="settings-form-control">
               <div className="settings-remote-auth-box">
-                <p className="settings-meta-note">{labels.bridgeGuide}</p>
-
                 <div className="settings-remote-auth-link-row">
-                  <span className="settings-remote-auth-label">{labels.bridgeCommand}</span>
+                  <div className="settings-command-header">
+                    <span className="settings-remote-auth-label">{labels.bridgeCommand}</span>
+                    <button
+                      type="button"
+                      className="button settings-command-copy-button"
+                      onClick={() => {
+                        setMessage("");
+                        setError("");
+                        setPendingAction("bridgeCopy");
+
+                        startTransition(async () => {
+                          try {
+                            if (!navigator.clipboard) {
+                              throw new Error(labels.bridgeCopyError);
+                            }
+                            await navigator.clipboard.writeText(bridgeCommand);
+                            setMessage(labels.bridgeCopied);
+                            setError("");
+                          } catch (requestError) {
+                            setError(
+                              requestError instanceof Error
+                                ? requestError.message
+                                : labels.bridgeCopyError,
+                            );
+                          } finally {
+                            setPendingAction(null);
+                          }
+                        });
+                      }}
+                    >
+                      {pendingAction === "bridgeCopy" && isPending
+                        ? labels.copyingBridgeCommand
+                        : labels.copyBridgeCommand}
+                    </button>
+                  </div>
                   <textarea
                     className="settings-input settings-command-input"
                     readOnly
@@ -250,39 +275,6 @@ export function NaverSessionSettings({
                 : labels.saveAccount}
             </button>
 
-            <button
-              type="button"
-              className="button"
-              disabled={toonarrUrl.length === 0}
-              onClick={() => {
-                setMessage("");
-                setError("");
-                setPendingAction("bridgeCopy");
-
-                startTransition(async () => {
-                  try {
-                    if (!navigator.clipboard) {
-                      throw new Error(labels.bridgeCopyError);
-                    }
-                    await navigator.clipboard.writeText(bridgeCommand);
-                    setMessage(labels.bridgeCopied);
-                    setError("");
-                  } catch (requestError) {
-                    setError(
-                      requestError instanceof Error
-                        ? requestError.message
-                        : labels.bridgeCopyError,
-                    );
-                  } finally {
-                    setPendingAction(null);
-                  }
-                });
-              }}
-            >
-              {pendingAction === "bridgeCopy" && isPending
-                ? labels.copyingBridgeCommand
-                : labels.copyBridgeCommand}
-            </button>
           </div>
 
           <div className="settings-inline-actions">

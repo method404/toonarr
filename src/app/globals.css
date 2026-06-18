@@ -1256,6 +1256,14 @@ textarea {
   gap: 8px;
 }
 
+.settings-command-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .settings-remote-auth-label {
   color: #f2f5f8;
   font-size: 0.88rem;
@@ -1268,6 +1276,11 @@ textarea {
   resize: vertical;
   line-height: 1.5;
   font-family: var(--font-mono), monospace;
+}
+
+.settings-command-copy-button {
+  min-height: 34px;
+  padding: 0 12px;
 }
 
 .settings-inline-note {

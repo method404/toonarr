@@ -4,6 +4,7 @@ import { access } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import process from "node:process";
+import readline from "node:readline";
 import { chromium } from "playwright";
 
 function parseArgs(argv) {
@@ -41,12 +42,12 @@ function printUsage() {
   console.log(`Toonarr Naver session bridge
 
 Usage:
-  node scripts/naver-session-bridge.mjs --toonarr-url http://NAS_IP:3000 --username NAVER_ID --password NAVER_PW
+  node scripts/naver-session-bridge.mjs --toonarr-url http://NAS_IP:3000 --username NAVER_ID
 
 Options:
   --toonarr-url   Toonarr base URL, e.g. http://192.168.0.10:3000
   --username      Naver ID
-  --password      Naver password
+  --password      Naver password, optional
   --profile-dir   Optional persistent browser profile directory
   --headless      true/false, default false
 `);
@@ -68,6 +69,12 @@ async function resolveBrowserLaunchOptions() {
     "/Applications/Chromium.app/Contents/MacOS/Chromium",
     "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
     "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+    "/usr/bin/google-chrome",
+    "/usr/bin/google-chrome-stable",
+    "/usr/bin/microsoft-edge",
+    "/usr/bin/microsoft-edge-stable",
   ];
 
   for (const executablePath of candidates) {
@@ -195,6 +202,35 @@ async function waitForSessionCookies(context, timeoutMs = 10 * 60 * 1000) {
   throw new Error("Timed out waiting for Naver session cookies.");
 }
 
+async function promptHidden(query) {
+  return new Promise((resolve) => {
+    const output = process.stdout;
+    const input = process.stdin;
+    const rl = readline.createInterface({
+      input,
+      output,
+      terminal: true,
+    });
+
+    const originalWrite = rl._writeToOutput.bind(rl);
+    rl._writeToOutput = function writeMuted(stringToWrite) {
+      if (rl.stdoutMuted) {
+        rl.output.write("*");
+        return;
+      }
+
+      originalWrite(stringToWrite);
+    };
+
+    rl.stdoutMuted = true;
+    rl.question(query, (answer) => {
+      rl.close();
+      output.write("\n");
+      resolve(answer.trim());
+    });
+  });
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
 
@@ -205,14 +241,20 @@ async function main() {
 
   const toonarrUrl = normalizeBaseUrl(args.get("toonarr-url"));
   const username = args.get("username")?.trim();
-  const password = args.get("password")?.trim();
+  const passwordArg = args.get("password")?.trim();
   const headless = args.get("headless") === "true";
   const profileDir =
     args.get("profile-dir")?.trim() ||
     path.join(os.tmpdir(), "toonarr-naver-session-bridge");
 
-  if (!username || !password) {
-    throw new Error("Missing --username or --password");
+  if (!username) {
+    throw new Error("Missing --username");
+  }
+
+  const password = passwordArg || (await promptHidden("Naver password: "));
+
+  if (!password) {
+    throw new Error("Missing password");
   }
 
   console.log("[toonarr-bridge] saving credentials to Toonarr...");
