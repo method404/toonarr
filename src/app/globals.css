@@ -351,6 +351,68 @@ textarea {
   margin-top: 22px;
 }
 
+.donate-browser {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 22px;
+}
+
+.donate-token-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.donate-token-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.donate-token-button {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #2b333d;
+  background: #171c23;
+  color: #f4f7fb;
+  text-align: left;
+  cursor: pointer;
+}
+
+.donate-token-button.active {
+  border-color: #19c37d;
+  background: #1b2329;
+}
+
+.donate-token-icon {
+  display: block;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.donate-token-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.donate-token-meta strong {
+  font-size: 1rem;
+  line-height: 1.1;
+}
+
+.donate-token-meta span {
+  color: #98a6b4;
+  font-size: 0.82rem;
+}
+
 .donate-method-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 220px;
@@ -361,41 +423,13 @@ textarea {
   background: #171c23;
 }
 
+.donate-method-card-active {
+  grid-template-columns: minmax(0, 1fr) 248px;
+  gap: 24px;
+}
+
 .donate-method-copy {
   min-width: 0;
-}
-
-.donate-method-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.donate-method-symbol {
-  margin: 0 0 4px;
-  color: #a3afbb;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.donate-method-heading h2 {
-  margin: 0;
-  font-size: 1.35rem;
-  line-height: 1.1;
-}
-
-.donate-method-network {
-  display: inline-flex;
-  align-items: center;
-  min-height: 26px;
-  padding: 0 10px;
-  background: #242b33;
-  color: #dbe3eb;
-  font-size: 0.78rem;
-  font-weight: 700;
 }
 
 .donate-address-block {
@@ -404,11 +438,23 @@ textarea {
 
 .donate-address-label {
   margin: 0 0 8px;
-  color: #8f9eac;
+  color: #ffffff;
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.donate-address-row {
+  display: flex;
+  align-items: flex-start;
+}
+
+.donate-address-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
 }
 
 .donate-address-value {
@@ -424,17 +470,16 @@ textarea {
   color: #7f8b97;
 }
 
-.donate-method-actions {
-  margin-top: 16px;
-}
-
 .donate-copy-button {
-  min-height: 32px;
-  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
   border: 1px solid #3a434d;
   background: #222931;
   color: #ffffff;
-  font-weight: 700;
   cursor: pointer;
 }
 
@@ -445,6 +490,7 @@ textarea {
 
 .donate-qr-panel {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
@@ -470,8 +516,67 @@ textarea {
   font-weight: 700;
 }
 
+.donate-note-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid #2b333d;
+  background: #171c23;
+}
+
+.donate-note-copy h2 {
+  margin: 0 0 6px;
+  font-size: 1.1rem;
+  line-height: 1.1;
+}
+
+.donate-note-copy p {
+  margin: 0;
+  color: #ffffff;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.donate-github-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #2d3842;
+  background: #1a2027;
+  color: #f4f7fb;
+}
+
+.donate-github-icon {
+  display: inline-flex;
+  color: #ffffff;
+}
+
+.donate-github-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.donate-github-copy strong {
+  font-size: 0.88rem;
+  line-height: 1;
+}
+
+.donate-github-copy span {
+  color: #9ba9b7;
+  font-size: 0.82rem;
+  line-height: 1.2;
+}
+
 @media (max-width: 860px) {
   .donate-header {
+    grid-template-columns: 1fr;
+  }
+
+  .donate-token-list {
     grid-template-columns: 1fr;
   }
 
@@ -481,6 +586,16 @@ textarea {
 
   .donate-qr-panel {
     justify-content: flex-start;
+  }
+
+  .donate-note-card,
+  .donate-address-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .donate-address-inline {
+    width: 100%;
   }
 }
 
