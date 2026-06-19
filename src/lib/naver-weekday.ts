@@ -41,6 +41,7 @@ export type WeekdaySeriesItem = {
   starScore: string;
   flags: string[];
   isAdult: boolean;
+  isPaid: boolean;
 };
 
 export type WeekdaySection = {
@@ -196,6 +197,7 @@ export async function getNaverWeekdaySections(
         typeof item.starScore === "number" ? item.starScore.toFixed(2) : "-",
       flags: normalizeFlags(item, locale),
       isAdult: Boolean(item.adult),
+      isPaid: Boolean(item.bm),
     })),
   }));
 }

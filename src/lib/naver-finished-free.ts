@@ -63,6 +63,7 @@ export type FinishedFreeItem = {
   flags: string[];
   rating: string;
   isAdult: boolean;
+  isPaid: boolean;
 };
 
 export type FinishedFreePage = {
@@ -95,6 +96,9 @@ function normalizeAuthors(item: RawFinishedFreeItem) {
 function normalizeFlags(item: RawFinishedFreeItem, locale: Locale) {
   const flags: string[] = [];
 
+  if (item.bm || item.chargeYn === "Y") {
+    flags.push(t(locale, "유료", "Paid"));
+  }
   if (item.rest) {
     flags.push(t(locale, "휴재", "On Break"));
   }
@@ -149,6 +153,7 @@ export async function getNaverFinishedFreePage(
           ? item.averageStarScore.toFixed(2)
           : "-",
       isAdult: Boolean(item.adult),
+      isPaid: Boolean(item.bm || item.chargeYn === "Y"),
     })),
     page: currentPage,
     pageSize: resolvedPageSize,

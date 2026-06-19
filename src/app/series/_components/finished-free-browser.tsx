@@ -23,6 +23,7 @@ type BrowserItem = {
   flags: string[];
   rating: string;
   isAdult: boolean;
+  isPaid: boolean;
 };
 
 type FinishedFreeBrowserProps = {
@@ -298,6 +299,7 @@ export function FinishedFreeBrowser({
             title: selectedItem.title,
             thumbnailUrl: selectedItem.thumbnailUrl,
             isAdult: selectedItem.isAdult,
+            isPaid: selectedItem.isPaid,
             authors: selectedItem.authors,
             overview: selectedItem.synopsis,
             rating: selectedItem.rating,

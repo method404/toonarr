@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { AdultBadge } from "@/app/_components/adult-badge";
 import type { Locale } from "@/lib/locale";
@@ -47,7 +46,6 @@ export function SeriesSelectionModal({
   onClose,
   onAdded,
 }: SeriesSelectionModalProps) {
-  const router = useRouter();
   const [rootFolder, setRootFolder] = useState(defaultRootFolder);
   const [monitorMode, setMonitorMode] =
     useState<MonitorMode>(defaultMonitorMode);
@@ -167,7 +165,6 @@ export function SeriesSelectionModal({
           });
         }
 
-        router.refresh();
         onClose();
       } catch (error) {
         const message = error instanceof Error ? error.message : "";

@@ -17,9 +17,11 @@ type RawCurationItem = {
   writers?: RawCurationAuthor[];
   painters?: RawCurationAuthor[];
   synopsis?: string;
+  chargeYn?: string;
   averageStarScore?: number;
   finished?: boolean;
   adult?: boolean;
+  bm?: boolean;
   up?: boolean;
   rest?: boolean;
   articleTotalCount?: number;
@@ -60,6 +62,7 @@ export type CurationItem = {
   flags: string[];
   rating: string;
   isAdult: boolean;
+  isPaid: boolean;
 };
 
 export type CurationPage = {
@@ -92,6 +95,9 @@ function normalizeAuthors(item: RawCurationItem) {
 function normalizeFlags(item: RawCurationItem, locale: Locale) {
   const flags: string[] = [];
 
+  if (item.bm || item.chargeYn === "Y") {
+    flags.push(t(locale, "유료", "Paid"));
+  }
   if (item.finished) {
     flags.push(t(locale, "완결", "Finished"));
   }
@@ -158,6 +164,7 @@ export async function getNaverCurationPage(
           ? item.averageStarScore.toFixed(2)
           : "-",
       isAdult: Boolean(item.adult),
+      isPaid: Boolean(item.bm || item.chargeYn === "Y"),
     })),
     page: currentPage,
     pageSize: resolvedPageSize,

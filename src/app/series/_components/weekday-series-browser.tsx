@@ -101,6 +101,11 @@ export function WeekdaySeriesBrowser({
                               {locale === "ko" ? "이미 추가됨" : "Added"}
                             </span>
                           ) : null}
+                          {item.isPaid ? (
+                            <span className="tag-badge subtle-tag">
+                              {locale === "ko" ? "유료" : "Paid"}
+                            </span>
+                          ) : null}
                         </div>
                         <span className="weekday-score">
                           <span className="weekday-star" aria-hidden="true">
@@ -150,6 +155,7 @@ export function WeekdaySeriesBrowser({
             title: selectedItem.title,
             thumbnailUrl: selectedItem.thumbnailUrl,
             isAdult: selectedItem.isAdult,
+            isPaid: selectedItem.isPaid,
             authors: selectedItem.author,
             rating: selectedItem.starScore,
           }}
