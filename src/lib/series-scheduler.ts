@@ -91,6 +91,9 @@ export function startSeriesScheduler() {
     void runScheduledRefresh();
   }, intervalMs);
 
+  // Run once on startup so overdue checks are not delayed until the next full interval.
+  void runScheduledRefresh();
+
   console.info(
     `[naverrr] series scheduler started (${getSeriesRefreshIntervalMinutes()} min)`,
   );
