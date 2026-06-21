@@ -108,4 +108,10 @@ npm exec --yes --package=github:method404/toonarr toonarr-naver-bridge -- --toon
 
 ## 📄 라이선스
 
-이 프로젝트는 [MIT License](./LICENSE)를 따릅니다.
+이 프로젝트는 GNU Affero General Public License v3.0만 적용하는
+[`AGPL-3.0-only`](./LICENSE) 라이선스를 따릅니다.
+
+- 사용, 수정, 배포는 허용됩니다.
+- 배포하거나 네트워크 서비스 형태로 제공하는 수정본은 대응 소스 공개 의무가 있습니다.
+- 저작권 고지와 라이선스 전문은 함께 유지해야 합니다.
+- 사용으로 인해 발생하는 문제나 손해에 대해서는 보증하지 않습니다.
