@@ -295,10 +295,10 @@ function clampCheckIntervalHours(value: number) {
 }
 
 export function getSeriesRefreshIntervalMinutes() {
-  const rawValue = Number(process.env.NAVERRR_REFRESH_INTERVAL_MINUTES ?? 1440);
+  const rawValue = Number(process.env.NAVERRR_REFRESH_INTERVAL_MINUTES ?? 180);
 
   if (!Number.isFinite(rawValue) || rawValue <= 0) {
-    return 1440;
+    return 180;
   }
 
   return Math.max(1, Math.floor(rawValue));

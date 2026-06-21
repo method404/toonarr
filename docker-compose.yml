@@ -8,6 +8,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      NAVERRR_REFRESH_INTERVAL_MINUTES: "${NAVERRR_REFRESH_INTERVAL_MINUTES:-180}"
       # Optional: set these to match your NAS user for bind-mounted folders.
       PUID: "${PUID:-}"
       PGID: "${PGID:-}"
