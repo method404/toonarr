@@ -2,10 +2,15 @@ import {
   getNaverSessionSummary,
   keepNaverSessionAlive,
 } from "@/lib/naver-session";
+import { getTimeoutFromEnv, withTimeout } from "@/lib/async-timeout";
 import { renewNaverSessionWithStoredCredentials } from "@/lib/naver-login-browser";
 
 const NAVER_SESSION_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 const NAVER_SESSION_KEEPALIVE_MAX_AGE_MS = 20 * 60 * 60 * 1000;
+const NAVER_SESSION_SCHEDULER_RUN_TIMEOUT_MS = getTimeoutFromEnv(
+  "NAVERRR_SESSION_SCHEDULER_RUN_TIMEOUT_MS",
+  2 * 60 * 1000,
+);
 
 declare global {
   var __naverrrNaverSessionSchedulerStarted: boolean | undefined;
@@ -35,7 +40,11 @@ async function runNaverSessionKeepalive() {
   globalThis.__naverrrNaverSessionSchedulerRunning = true;
 
   try {
-    const summary = await getNaverSessionSummary();
+    const summary = await withTimeout(
+      () => getNaverSessionSummary(),
+      NAVER_SESSION_SCHEDULER_RUN_TIMEOUT_MS,
+      "Naver session scheduler run",
+    );
 
     if (!summary.configured) {
       return;
@@ -50,14 +59,22 @@ async function runNaverSessionKeepalive() {
       return;
     }
 
-    const keepalive = await keepNaverSessionAlive();
+    const keepalive = await withTimeout(
+      () => keepNaverSessionAlive(),
+      NAVER_SESSION_SCHEDULER_RUN_TIMEOUT_MS,
+      "Naver session keepalive run",
+    );
 
     if (keepalive.isValid) {
       console.info("[naverrr] naver session keepalive refreshed");
       return;
     }
 
-    const renewedSession = await renewNaverSessionWithStoredCredentials();
+    const renewedSession = await withTimeout(
+      () => renewNaverSessionWithStoredCredentials(),
+      NAVER_SESSION_SCHEDULER_RUN_TIMEOUT_MS,
+      "Naver session renewal run",
+    );
 
     if (renewedSession?.isValid) {
       console.info("[naverrr] naver session renewed with stored credentials");

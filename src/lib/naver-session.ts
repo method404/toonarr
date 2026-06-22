@@ -1,7 +1,12 @@
 import { chmod, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { fetchWithTimeout, getTimeoutFromEnv } from "@/lib/async-timeout";
 
 const NAVER_SESSION_PROBE_TITLE_ID = 841624;
+const NAVER_SESSION_VALIDATION_TIMEOUT_MS = getTimeoutFromEnv(
+  "NAVERRR_SESSION_VALIDATION_TIMEOUT_MS",
+  15_000,
+);
 
 type RawWeekdayAdultItem = {
   titleId?: number;
@@ -299,7 +304,7 @@ async function writeStoredSession(session: StoredNaverSession) {
 
 async function validateCookieHeader(cookieHeader: string): Promise<ValidateResult> {
   const probeTitleId = await resolveAdultProbeTitleId();
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     `https://comic.naver.com/api/article/list?titleId=${probeTitleId}&page=1`,
     {
       cache: "no-store",
@@ -312,6 +317,10 @@ async function validateCookieHeader(cookieHeader: string): Promise<ValidateResul
           "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
       },
       redirect: "manual",
+    },
+    {
+      timeoutMs: NAVER_SESSION_VALIDATION_TIMEOUT_MS,
+      label: "Naver session validation request",
     },
   );
 
@@ -347,7 +356,7 @@ async function validateCookieHeader(cookieHeader: string): Promise<ValidateResul
 
 async function resolveAdultProbeTitleId() {
   try {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       "https://comic.naver.com/api/webtoon/titlelist/weekday?order=user",
       {
         cache: "no-store",
@@ -356,8 +365,12 @@ async function resolveAdultProbeTitleId() {
           "accept-language": "ko-KR,ko;q=0.9,en-US;q=0.8",
           referer: "https://comic.naver.com/",
           "user-agent":
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
         },
+      },
+      {
+        timeoutMs: NAVER_SESSION_VALIDATION_TIMEOUT_MS,
+        label: "Naver adult probe request",
       },
     );
 

@@ -2,7 +2,13 @@ import {
   getSeriesRefreshIntervalMinutes,
   refreshAllStoredSeries,
 } from "@/lib/library-store";
+import { getTimeoutFromEnv, withTimeout } from "@/lib/async-timeout";
 import type { JobRun } from "@/lib/types";
+
+const SERIES_SCHEDULER_RUN_TIMEOUT_MS = getTimeoutFromEnv(
+  "NAVERRR_SERIES_SCHEDULER_RUN_TIMEOUT_MS",
+  10 * 60 * 1000,
+);
 
 declare global {
   var __naverrrSchedulerStarted: boolean | undefined;
@@ -43,7 +49,11 @@ async function runScheduledRefresh() {
   };
 
   try {
-    const entries = await refreshAllStoredSeries();
+    const entries = await withTimeout(
+      () => refreshAllStoredSeries(),
+      SERIES_SCHEDULER_RUN_TIMEOUT_MS,
+      "Series refresh scheduler run",
+    );
     appendSchedulerRecentJob({
       id: `scheduler-job-${Date.now()}`,
       name: "Series refresh scheduler",

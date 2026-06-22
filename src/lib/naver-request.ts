@@ -2,6 +2,16 @@ import {
   getNaverSessionCookieHeader,
   mergeNaverSessionSetCookieLines,
 } from "@/lib/naver-session";
+import { fetchWithTimeout, getTimeoutFromEnv } from "@/lib/async-timeout";
+
+const NAVER_FETCH_TIMEOUT_MS = getTimeoutFromEnv(
+  "NAVERRR_FETCH_TIMEOUT_MS",
+  30_000,
+);
+const NAVER_INTERNAL_API_TIMEOUT_MS = getTimeoutFromEnv(
+  "NAVERRR_INTERNAL_API_TIMEOUT_MS",
+  15_000,
+);
 
 function shouldAttachNaverCookie(url: string) {
   const hostname = new URL(url).hostname;
@@ -73,11 +83,18 @@ async function performNaverFetch(
   init: RequestInit | undefined,
   cookieHeader: string | null,
 ) {
-  const response = await fetch(url, {
-    ...init,
-    cache: "no-store",
-    headers: withDefaultHeaders(url, init?.headers, cookieHeader),
-  });
+  const response = await fetchWithTimeout(
+    url,
+    {
+      ...init,
+      cache: "no-store",
+      headers: withDefaultHeaders(url, init?.headers, cookieHeader),
+    },
+    {
+      timeoutMs: NAVER_FETCH_TIMEOUT_MS,
+      label: `Naver request (${url})`,
+    },
+  );
 
   if (shouldAttachNaverCookie(url)) {
     const setCookieLines =
@@ -97,11 +114,15 @@ function getInternalAppUrl() {
 
 async function tryRenewNaverSession() {
   try {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       `${getInternalAppUrl()}/api/settings/naver-session/renew`,
       {
         method: "POST",
         cache: "no-store",
+      },
+      {
+        timeoutMs: NAVER_INTERNAL_API_TIMEOUT_MS,
+        label: "internal Naver session renew request",
       },
     );
 
