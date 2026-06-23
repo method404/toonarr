@@ -32,9 +32,12 @@ function getLastActivityAt(summary: {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
-async function runNaverSessionKeepalive() {
+export async function runNaverSessionKeepalive() {
   if (globalThis.__naverrrNaverSessionSchedulerRunning) {
-    return;
+    return {
+      skipped: true,
+      action: "skipped" as const,
+    };
   }
 
   globalThis.__naverrrNaverSessionSchedulerRunning = true;
@@ -47,7 +50,10 @@ async function runNaverSessionKeepalive() {
     );
 
     if (!summary.configured) {
-      return;
+      return {
+        skipped: false,
+        action: "not-configured" as const,
+      };
     }
 
     const lastActivityAt = getLastActivityAt(summary);
@@ -56,7 +62,10 @@ async function runNaverSessionKeepalive() {
       lastActivityAt !== null &&
       Date.now() - lastActivityAt < NAVER_SESSION_KEEPALIVE_MAX_AGE_MS
     ) {
-      return;
+      return {
+        skipped: false,
+        action: "fresh" as const,
+      };
     }
 
     const keepalive = await withTimeout(
@@ -67,7 +76,10 @@ async function runNaverSessionKeepalive() {
 
     if (keepalive.isValid) {
       console.info("[naverrr] naver session keepalive refreshed");
-      return;
+      return {
+        skipped: false,
+        action: "refreshed" as const,
+      };
     }
 
     const renewedSession = await withTimeout(
@@ -78,11 +90,20 @@ async function runNaverSessionKeepalive() {
 
     if (renewedSession?.isValid) {
       console.info("[naverrr] naver session renewed with stored credentials");
+      return {
+        skipped: false,
+        action: "renewed" as const,
+      };
     } else {
       console.warn("[naverrr] naver session keepalive failed; bridge login may be required");
+      return {
+        skipped: false,
+        action: "bridge-required" as const,
+      };
     }
   } catch (error) {
     console.error("[naverrr] naver session keepalive failed", error);
+    throw error;
   } finally {
     globalThis.__naverrrNaverSessionSchedulerRunning = false;
   }

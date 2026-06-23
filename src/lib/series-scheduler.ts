@@ -32,9 +32,12 @@ function appendSchedulerRecentJob(job: JobRun) {
   globalThis.__naverrrSchedulerRecentJobs = jobs.slice(0, 12);
 }
 
-async function runScheduledRefresh() {
+export async function runScheduledRefresh() {
   if (globalThis.__naverrrSchedulerRunning) {
-    return;
+    return {
+      skipped: true,
+      itemsProcessed: 0,
+    };
   }
 
   globalThis.__naverrrSchedulerRunning = true;
@@ -68,6 +71,10 @@ async function runScheduledRefresh() {
         `[naverrr] scheduled refresh complete: ${entries.length} series`,
       );
     }
+    return {
+      skipped: false,
+      itemsProcessed: entries.length,
+    };
   } catch (error) {
     console.error("[naverrr] scheduled refresh failed", error);
     appendSchedulerRecentJob({
@@ -79,6 +86,7 @@ async function runScheduledRefresh() {
       startedAt,
       finishedAt: new Date().toISOString(),
     });
+    throw error;
   } finally {
     globalThis.__naverrrSchedulerRunning = false;
     globalThis.__naverrrSchedulerCurrentRun = undefined;

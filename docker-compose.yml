@@ -9,6 +9,8 @@ services:
       NODE_ENV: production
       PORT: 3000
       NAVERRR_REFRESH_INTERVAL_MINUTES: "${NAVERRR_REFRESH_INTERVAL_MINUTES:-180}"
+      NAVERRR_ENABLE_BACKGROUND_SCHEDULER: "${NAVERRR_ENABLE_BACKGROUND_SCHEDULER:-true}"
+      NAVERRR_ENABLE_IN_PROCESS_SCHEDULERS: "${NAVERRR_ENABLE_IN_PROCESS_SCHEDULERS:-false}"
       # Optional: set these to match your NAS user for bind-mounted folders.
       PUID: "${PUID:-}"
       PGID: "${PGID:-}"

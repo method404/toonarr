@@ -14,7 +14,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends chromium ca-certificates fonts-noto-color-emoji gosu \
+  && apt-get install -y --no-install-recommends chromium ca-certificates curl fonts-noto-color-emoji gosu \
   && rm -rf /var/lib/apt/lists/*
 RUN groupadd --system appgroup && useradd --system --gid appgroup --create-home appuser
 RUN mkdir -p /app/data /app/storage /app/.next/cache \
@@ -22,7 +22,8 @@ RUN mkdir -p /app/data /app/storage /app/.next/cache \
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+COPY docker/background-scheduler.sh /usr/local/bin/toonarr-background-scheduler
 COPY docker/entrypoint.sh /usr/local/bin/toonarr-entrypoint
-RUN chmod +x /usr/local/bin/toonarr-entrypoint
+RUN chmod +x /usr/local/bin/toonarr-background-scheduler /usr/local/bin/toonarr-entrypoint
 EXPOSE 3000
 ENTRYPOINT ["/usr/local/bin/toonarr-entrypoint"]
